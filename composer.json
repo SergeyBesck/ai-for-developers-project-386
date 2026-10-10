@@ -1,0 +1,13 @@
+{
+    "name": "sergeybesck/call-calendar",
+    "require": {
+        "php": ">=8.3"
+    },
+    "authors": [
+        {
+            "name": "Sergey.Besck",
+            "email": "sergey.besck@gmail.com"
+        }
+    ],
+    "autoload": { "psr-4": { "App\\": "src/" } }
+}
