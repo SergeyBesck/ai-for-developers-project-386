@@ -11,6 +11,8 @@ PHP 8.3 без фреймворка + HTML/CSS/JS без сборки.
 - Запуск: `php -S localhost:8000 -t public`
 - Тесты: `composer test`
 - Линт: `composer lint && npm run lint`
+ 
+  
 
 ## Правила
 - Перед завершением задачи прогнать тесты и линтеры.
