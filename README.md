@@ -14,14 +14,11 @@
 
 ## Установка
 
+```bash
 git clone https://github.com/SergeyBesck/ai-for-developers-project-386.git
 cd ai-for-developers-project-386
 composer install
 npm ci
-
-```bash
-git clone https://github.com/SergeyBesck/ai-for-developers-project-386.git
-cd ai-for-developers-project-386
 ```
 
 ## Использование
