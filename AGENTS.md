@@ -21,5 +21,5 @@ PHP 8.3 без фреймворка + HTML/CSS/JS без сборки.
 
 ## Коммиты
 Conventional Commits: `type(scope): описание`.
-Тпы: feat, fix, docs, refactor, test, chore, ci. Breaking change: `!` после типа
-или `BREAKING CHANGE:и` в теле. Релизы строит release-please по этим коммитам.
+Типы: feat, fix, docs, refactor, test, chore, ci. Breaking change: `!` после типа
+или `BREAKING CHANGE:` в теле. Релизы строит release-please по этим коммитам.
