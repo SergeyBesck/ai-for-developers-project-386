@@ -14,7 +14,9 @@
 
 ## Установка
 
-<!-- Опишите установку: клонирование, зависимости, переменные окружения -->
+git clone https://github.com/SergeyBesck/ai-for-developers-project-386.git
+cd ai-for-developers-project-386
+composer install && npm ci
 
 ```bash
 git clone https://github.com/SergeyBesck/ai-for-developers-project-386.git
@@ -23,7 +25,10 @@ cd ai-for-developers-project-386
 
 ## Использование
 
-<!-- Добавьте примеры запуска и запись asciinema — именно это смотрит работодатель -->
+php -S localhost:8000 -t public
+composer test
+composer lint
+npm run lint
 
 ---
 
