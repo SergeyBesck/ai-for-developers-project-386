@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/SergeyBesck/ai-for-developers-project-386/compare/my-project-v1.0.0...my-project-v1.1.0) (2026-10-11)
+
+
+### Features
+
+* **home:** главная по эталону и заглушка страницы записи ([cf448ec](https://github.com/SergeyBesck/ai-for-developers-project-386/commit/cf448ec6e6651f8b44cf419fbcc16ff21f5c8709))
+
 ## 1.0.0 (2026-10-10)
 
 
