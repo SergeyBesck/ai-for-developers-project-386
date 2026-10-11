@@ -12,7 +12,7 @@ PHP 8.3 без фреймворка (роутинг — league/route, валид
 - tests/ — PHPUnit
 
 ## Команды
-- Запуск: `php -S localhost:8000 -t public`
+- Запуск: `php -S localhost:8000 -t public public/router.php`
 - Генерация артефактов: `npm run generate`
 - Тесты: `composer test`
 - Линт: `composer lint && npm run lint`
