@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.2.0](https://github.com/SergeyBesck/ai-for-developers-project-386/compare/my-project-v1.1.0...my-project-v1.2.0) (2026-10-11)
+
+
+### Features
+
+* **chain:** npm run generate — DTO, таблица маршрутов и SDK из openapi.json ([8507662](https://github.com/SergeyBesck/ai-for-developers-project-386/commit/85076628eb1a29f0dde497acdfc098b5b3a43a68))
+* **contract:** TypeSpec-контракт API и openapi.json ([5713733](https://github.com/SergeyBesck/ai-for-developers-project-386/commit/571373321f94a5e16b9f37961d0e9108d88d593f))
+* TypeSpec-контракт, цепочка генерации и документация проекта ([1de7205](https://github.com/SergeyBesck/ai-for-developers-project-386/commit/1de72055b0a6dd6ba882c589c02b194d399b4d88))
+
 ## [1.1.0](https://github.com/SergeyBesck/ai-for-developers-project-386/compare/my-project-v1.0.0...my-project-v1.1.0) (2026-10-11)
 
 
