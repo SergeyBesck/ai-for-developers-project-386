@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App;
 
 use App\Handler\HandlerInterface;
+use App\Handler\ListSlotsHandler;
 use App\Http\Json;
 use League\OpenAPIValidation\PSR7\Exception\NoOperation;
 use League\OpenAPIValidation\PSR7\Exception\NoResponseCode;
@@ -33,6 +34,8 @@ final class Kernel
     private const SPEC_PATH = __DIR__ . '/../openapi.json';
 
     private readonly EventTypeRepository $eventTypes;
+    private readonly Clock $clock;
+    private readonly string $timezone;
     private readonly Router $router;
     private readonly ServerRequestValidator $requestValidator;
     private readonly ResponseValidator $responseValidator;
@@ -42,6 +45,8 @@ final class Kernel
         $database = new Database($config->databasePath);
         $database->migrate();
         $this->eventTypes = new EventTypeRepository($database, $clock);
+        $this->clock = $clock;
+        $this->timezone = $config->timezone;
 
         $builder = (new ValidatorBuilder())->fromJsonFile(self::SPEC_PATH);
         $this->requestValidator = $builder->getServerRequestValidator();
@@ -124,10 +129,23 @@ final class Kernel
                 ));
             }
 
-            $router->map($route['method'], self::BASE_PATH . $route['path'], new $handlerClass($this->eventTypes));
+            $router->map($route['method'], self::BASE_PATH . $route['path'], $this->makeHandler($handlerClass));
         }
 
         return $router;
+    }
+
+    /**
+     * Сборка обработчика с зависимостями, которые ему нужны.
+     *
+     * @param class-string<HandlerInterface> $handlerClass
+     */
+    private function makeHandler(string $handlerClass): HandlerInterface
+    {
+        return match ($handlerClass) {
+            ListSlotsHandler::class => new ListSlotsHandler($this->eventTypes, $this->clock, $this->timezone),
+            default => new $handlerClass($this->eventTypes),
+        };
     }
 
     /**
