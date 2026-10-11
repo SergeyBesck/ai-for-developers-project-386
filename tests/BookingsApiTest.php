@@ -2,9 +2,12 @@
 
 declare(strict_types=1);
 
+use App\BookingRepository;
 use App\Clock;
 use App\Config;
+use App\Database;
 use App\Kernel;
+use App\SlotConflictException;
 use League\OpenAPIValidation\PSR7\OperationAddress;
 use League\OpenAPIValidation\PSR7\ResponseValidator;
 use League\OpenAPIValidation\PSR7\ValidatorBuilder;
@@ -161,6 +164,158 @@ final class BookingsApiTest extends TestCase
         $this->assertMatchesContract($response);
     }
 
+    public function testOverlappingBookingReturns409AndLeavesNoTrace(): void
+    {
+        $this->createEventType('intro-call', 'Звонок', 30);
+        $this->book('intro-call', '2026-10-12T10:00:00+03:00');
+
+        // 10:15 требует ячейку 10:15, занятую записью 10:00–10:30.
+        $conflict = $this->request('POST', '/api/bookings', [
+            'eventTypeId' => 'intro-call',
+            'start' => '2026-10-12T10:15:00+03:00',
+            'name' => 'Иван',
+            'email' => 'ivan@example.com',
+        ]);
+
+        self::assertSame(409, $conflict->getStatusCode());
+        $this->assertProblem($conflict, 409);
+        $this->assertMatchesContract($conflict);
+
+        // Откат полный: не осталось ни ячеек, ни записи отклонённой попытки.
+        self::assertSame(1, $this->scalar('SELECT COUNT(*) FROM bookings'));
+        self::assertSame(2, $this->scalar('SELECT COUNT(*) FROM booking_cells'));
+
+        // Свободный промежуток после записи бронируется.
+        $this->book('intro-call', '2026-10-12T10:30:00+03:00');
+        self::assertSame(2, $this->scalar('SELECT COUNT(*) FROM bookings'));
+        self::assertSame(4, $this->scalar('SELECT COUNT(*) FROM booking_cells'));
+    }
+
+    public function testOverlappingBookingOfAnotherEventTypeReturns409(): void
+    {
+        $this->createEventType('intro-call', 'Звонок', 30);
+        $this->createEventType('quick-call', 'Быстрый созвон', 15);
+        $this->book('intro-call', '2026-10-12T10:00:00+03:00');
+
+        $conflict = $this->request('POST', '/api/bookings', [
+            'eventTypeId' => 'quick-call',
+            'start' => '2026-10-12T10:00:00+03:00',
+            'name' => 'Иван',
+            'email' => 'ivan@example.com',
+        ]);
+
+        self::assertSame(409, $conflict->getStatusCode());
+        $this->assertProblem($conflict, 409);
+        self::assertSame(1, $this->scalar('SELECT COUNT(*) FROM bookings'));
+        self::assertSame(2, $this->scalar('SELECT COUNT(*) FROM booking_cells'));
+    }
+
+    public function testInvalidStartReturns422ProblemJson(): void
+    {
+        $this->createEventType('intro-call', 'Звонок', 30);
+
+        $cases = [
+            'вне окна 14 дней' => '2026-10-25T10:00:00+03:00',
+            'не на сетке 15 минут' => '2026-10-12T10:07:00+03:00',
+            'с секундами на сетке' => '2026-10-12T10:00:30+03:00',
+            'до 09:00' => '2026-10-12T08:45:00+03:00',
+            'не укладывается до 18:00' => '2026-10-12T17:45:00+03:00',
+            'в прошлом' => '2026-10-11T11:45:00+03:00',
+        ];
+
+        foreach ($cases as $label => $start) {
+            $response = $this->request('POST', '/api/bookings', [
+                'eventTypeId' => 'intro-call',
+                'start' => $start,
+                'name' => 'Анна',
+                'email' => 'anna@example.com',
+            ]);
+
+            self::assertSame(422, $response->getStatusCode(), $label);
+            $this->assertProblem($response, 422);
+            $this->assertMatchesContract($response);
+        }
+
+        // Ни одна отклонённая попытка не оставила записей.
+        self::assertSame(0, $this->scalar('SELECT COUNT(*) FROM bookings'));
+        self::assertSame(0, $this->scalar('SELECT COUNT(*) FROM booking_cells'));
+    }
+
+    public function testSchemaViolationReturns400ProblemJson(): void
+    {
+        $this->createEventType('intro-call', 'Звонок', 30);
+
+        $valid = [
+            'eventTypeId' => 'intro-call',
+            'start' => '2026-10-12T10:00:00+03:00',
+            'name' => 'Анна',
+            'email' => 'anna@example.com',
+        ];
+
+        $cases = [
+            'start без смещения' => ['start' => '2026-10-12T10:00:00'],
+            'пустое имя' => ['name' => ''],
+            'имя длиннее 100' => ['name' => str_repeat('а', 101)],
+            'неверный email' => ['email' => 'anna@'],
+            'заметка длиннее 500' => ['note' => str_repeat('а', 501)],
+            'нет имени' => null,
+        ];
+
+        foreach ($cases as $label => $override) {
+            $payload = $override === null
+                ? array_diff_key($valid, ['name' => true])
+                : array_merge($valid, $override);
+
+            $response = $this->request('POST', '/api/bookings', $payload);
+
+            self::assertSame(400, $response->getStatusCode(), $label);
+            $this->assertProblem($response, 400);
+            $this->assertMatchesContract($response);
+        }
+
+        self::assertSame(0, $this->scalar('SELECT COUNT(*) FROM bookings'));
+    }
+
+    public function testSecondOverlappingInsertFailsEntirelyAtStorageLevel(): void
+    {
+        // Уровень хранилища, без HTTP: две попытки занять пересекающиеся ячейки.
+        $database = new Database($this->databasePath);
+        $repository = new BookingRepository($database, self::clockAt(self::NOW));
+
+        $repository->create(
+            self::uuid('1'),
+            'intro-call',
+            new DateTimeImmutable('2026-10-12 10:00:00+03:00', new DateTimeZone('Europe/Moscow')),
+            30,
+            'Анна',
+            'anna@example.com',
+            null,
+        );
+
+        try {
+            $repository->create(
+                self::uuid('2'),
+                'quick-call',
+                new DateTimeImmutable('2026-10-12 10:15:00+03:00', new DateTimeZone('Europe/Moscow')),
+                15,
+                'Иван',
+                'ivan@example.com',
+                null,
+            );
+            self::fail('Ожидалось пересечение ячеек');
+        } catch (SlotConflictException) {
+            // Ожидаемый конфликт: ячейка 10:15 уже занята.
+        }
+
+        // Вторая попытка падает целиком: ни одной ячейки и ни одной записи.
+        self::assertSame(1, $this->scalar('SELECT COUNT(*) FROM bookings'));
+        self::assertSame(2, $this->scalar('SELECT COUNT(*) FROM booking_cells'));
+        self::assertSame(0, $this->scalar(
+            'SELECT COUNT(*) FROM booking_cells WHERE booking_id = :id',
+            ['id' => self::uuid('2')],
+        ));
+    }
+
     private function createEventType(string $id, string $name, int $durationMinutes): void
     {
         $response = $this->request('POST', '/api/event-types', [
@@ -220,6 +375,24 @@ final class BookingsApiTest extends TestCase
         $pdo = new PDO('sqlite:' . $this->databasePath);
         $pdo->exec('DELETE FROM booking_cells');
         $pdo->exec('DELETE FROM bookings');
+    }
+
+    /** @param array<string, string> $bindings */
+    private function scalar(string $sql, array $bindings = []): int
+    {
+        $pdo = new PDO('sqlite:' . $this->databasePath);
+        $statement = $pdo->prepare($sql);
+        $statement->execute($bindings);
+        $value = $statement->fetchColumn();
+        self::assertIsNumeric($value);
+
+        return (int) $value;
+    }
+
+    /** Детерминированный UUID v4 для проверки сохранённых строк. */
+    private static function uuid(string $seed): string
+    {
+        return str_pad($seed, 8, '0') . '-0000-4000-8000-000000000000';
     }
 
     private function request(string $method, string $path, ?array $payload = null): ResponseInterface

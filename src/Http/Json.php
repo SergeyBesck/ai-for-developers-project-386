@@ -19,6 +19,7 @@ final class Json
         404 => 'not-found',
         405 => 'method-not-allowed',
         409 => 'conflict',
+        422 => 'unprocessable-entity',
         500 => 'internal-server-error',
         501 => 'not-implemented',
     ];

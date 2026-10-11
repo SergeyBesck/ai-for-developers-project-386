@@ -175,4 +175,16 @@ final class PagesTest extends TestCase
         self::assertStringNotContainsString('fetch(', $js);
         self::assertStringNotContainsString('innerHTML', $js);
     }
+
+    public function testBookingScriptPuts400ErrorsOnFieldsAndReturnsToTimeOnConflict(): void
+    {
+        $js = self::page('assets/booking.js');
+
+        self::assertStringContainsString('guest-name-error', $js);
+        self::assertStringContainsString('guest-email-error', $js);
+        self::assertStringContainsString('guest-note-error', $js);
+        self::assertStringContainsString('applyFieldErrors', $js);
+        self::assertStringContainsString('Время уже заняли, выберите другое.', $js);
+        self::assertStringContainsString('status === 409', $js);
+    }
 }

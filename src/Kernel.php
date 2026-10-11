@@ -155,6 +155,7 @@ final class Kernel
             CreateBookingHandler::class => new CreateBookingHandler(
                 $this->eventTypes,
                 $this->bookings,
+                $this->clock,
                 $this->timezone,
             ),
             default => new $handlerClass($this->eventTypes),

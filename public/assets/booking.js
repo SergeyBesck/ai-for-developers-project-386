@@ -31,6 +31,9 @@ const bookingError = document.getElementById('booking-error');
 const nameInput = document.getElementById('guest-name');
 const emailInput = document.getElementById('guest-email');
 const noteInput = document.getElementById('guest-note');
+const nameError = document.getElementById('guest-name-error');
+const emailError = document.getElementById('guest-email-error');
+const noteError = document.getElementById('guest-note-error');
 const submitBooking = document.getElementById('submit-booking');
 const confirmType = document.getElementById('confirm-type');
 const confirmWhen = document.getElementById('confirm-when');
@@ -42,6 +45,8 @@ const DAYS_PER_PAGE = 7;
 const LOAD_TYPES_ERROR = 'Не удалось загрузить типы событий';
 const LOAD_SLOTS_ERROR = 'Не удалось загрузить слоты';
 const BOOKING_ERROR_MESSAGE = 'Не удалось создать запись';
+const SLOT_TAKEN_MESSAGE = 'Время уже заняли, выберите другое.';
+const FIELD_REQUIRED_MESSAGE = 'Поле обязательно к заполнению';
 
 const STEP_ORDER = ['type', 'time', 'data', 'confirm'];
 const stepSections = { type: typeStep, time: timeStep, data: dataStep, confirm: confirmStep };
@@ -50,6 +55,13 @@ const stepMarkers = {
   time: stepTimeMarker,
   data: stepDataMarker,
   confirm: stepConfirmMarker,
+};
+
+// Поля формы «Данные»: элемент ошибки рядом с полем и поле ввода.
+const formFields = {
+  name: { input: nameInput, error: nameError },
+  email: { input: emailInput, error: emailError },
+  note: { input: noteInput, error: noteError },
 };
 
 // Часовой пояс и границы окна приходят только из ответа сервера.
@@ -76,6 +88,101 @@ function problemDetail(error) {
   }
 
   return '';
+}
+
+/** Статус problem+json из ответа SDK; без него — null. */
+function problemStatus(error) {
+  if (error && typeof error === 'object' && typeof error.status === 'number') {
+    return error.status;
+  }
+
+  return null;
+}
+
+function showFieldError(field, message) {
+  showError(formFields[field].error, message);
+  formFields[field].input.setAttribute('aria-invalid', 'true');
+}
+
+function clearFieldErrors() {
+  for (const field of Object.values(formFields)) {
+    hideError(field.error);
+    field.input.removeAttribute('aria-invalid');
+  }
+}
+
+/** Поле формы, значение которого совпало с нарушителем из текста ошибки валидатора. */
+function fieldByValue(value) {
+  if (value === '') {
+    return 'name';
+  }
+
+  for (const [name, field] of Object.entries(formFields)) {
+    if (field.input.value.trim() === value) {
+      return name;
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Ошибки 400 контрактного валидатора: текст называет свойство или нарушившее значение,
+ * по нему ошибка встаёт у соответствующего поля формы.
+ */
+function applyFieldErrors(error) {
+  const detail = problemDetail(error);
+
+  if (!detail) {
+    return false;
+  }
+
+  const required = detail.match(/Required property '([a-zA-Z]+)'/);
+
+  if (required && formFields[required[1]]) {
+    showFieldError(required[1], FIELD_REQUIRED_MESSAGE);
+    return true;
+  }
+
+  const format = detail.match(/Value '([^']*)' does not match format (\w+)/);
+
+  if (format) {
+    const field = fieldByValue(format[1]);
+
+    if (field === 'email') {
+      showFieldError('email', 'Проверьте формат email');
+      return true;
+    }
+  }
+
+  const length = detail.match(/Length of '([^']*)' must be shorter or equal to (\d+)/);
+
+  if (length) {
+    const field = fieldByValue(length[1]);
+
+    if (field) {
+      showFieldError(field, `Не больше ${length[2]} символов`);
+      return true;
+    }
+  }
+
+  if (detail.includes("Length of '' must be longer or equal to 1")) {
+    showFieldError('name', 'Укажите имя');
+    return true;
+  }
+
+  return false;
+}
+
+/** 409 или 422: возврат на шаг «Время» с обновлёнными слотами и сообщением. */
+async function returnToTimeStep(message) {
+  showStep('time');
+
+  if (selectedEventType) {
+    await loadSlots(selectedEventType.id);
+  }
+
+  showError(slotsError, message);
 }
 
 function dayKey(iso) {
@@ -330,6 +437,9 @@ async function loadSlots(id) {
   calendar.hidden = true;
   daySlots.replaceChildren();
   daySlotsTitle.textContent = '';
+  // Список изменился — прежний выбор слота больше не действителен.
+  selectedStart = null;
+  continueToData.disabled = true;
 
   const { data, error } = await listSlots({ path: { id } });
 
@@ -394,6 +504,7 @@ continueToData.addEventListener('click', () => {
 bookingForm.addEventListener('submit', async (event) => {
   event.preventDefault();
   hideError(bookingError);
+  clearFieldErrors();
   submitBooking.disabled = true;
 
   const note = noteInput.value.trim();
@@ -409,13 +520,28 @@ bookingForm.addEventListener('submit', async (event) => {
 
   submitBooking.disabled = false;
 
-  if (error) {
-    showError(bookingError, problemDetail(error) || BOOKING_ERROR_MESSAGE);
+  if (!error) {
+    renderConfirmation(data);
+    showStep('confirm');
     return;
   }
 
-  renderConfirmation(data);
-  showStep('confirm');
+  const status = problemStatus(error);
+
+  if (status === 409 || status === 422) {
+    await returnToTimeStep(status === 409 ? SLOT_TAKEN_MESSAGE : problemDetail(error) || SLOT_TAKEN_MESSAGE);
+    return;
+  }
+
+  if (status === 400) {
+    if (!applyFieldErrors(error)) {
+      showError(bookingError, problemDetail(error) || 'Проверьте форму: данные не прошли проверку');
+    }
+
+    return;
+  }
+
+  showError(bookingError, problemDetail(error) || BOOKING_ERROR_MESSAGE);
 });
 
 prevDays.addEventListener('click', () => {
