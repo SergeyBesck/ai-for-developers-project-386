@@ -728,6 +728,59 @@ dialog.modal::backdrop {
   color: var(--color-text-muted);
 }
 
+/* Шаг «Данные» и подтверждение */
+
+.time-actions {
+  margin-top: 24px;
+}
+
+.booking-form {
+  max-width: 480px;
+}
+
+.field-error {
+  margin: 6px 0 0;
+  font-size: 0.85rem;
+  color: #b91c1c;
+}
+
+.confirm-card {
+  max-width: 560px;
+  margin-bottom: 24px;
+  padding: 24px;
+}
+
+.confirm-list {
+  margin: 0;
+  display: grid;
+  gap: 12px;
+}
+
+.confirm-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.confirm-row:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.confirm-row dt {
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+}
+
+.confirm-row dd {
+  margin: 0;
+  font-weight: 600;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
 /* Адаптив */
 
 @media (max-width: 768px) {

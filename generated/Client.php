@@ -14,10 +14,11 @@ class Client extends \App\Generated\Runtime\Client\Client
         return $this->executeEndpoint(new \App\Generated\Endpoint\ListBookings());
     }
     /**
-     * Создание записи Гостем на свободный слот.
+     * Создание записи Гостем на свободный слот. 404 — тип события не найден.
      * @param \App\Generated\Model\BookingCreate $requestBody
      * @param array $accept Accept content header application/json|application/problem+json
      * @throws \App\Generated\Exception\CreateBookingBadRequestException
+     * @throws \App\Generated\Exception\CreateBookingNotFoundException
      * @throws \App\Generated\Exception\CreateBookingConflictException
      * @throws \App\Generated\Exception\CreateBookingUnprocessableEntityException
      * @throws \App\Generated\Exception\BadResponseException

@@ -24,7 +24,7 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
 export const listBookings = <ThrowOnError extends boolean = false>(options?: Options<ListBookingsData, ThrowOnError>): RequestResult<ListBookingsResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ListBookingsResponses, unknown, ThrowOnError>({ url: '/bookings', ...options });
 
 /**
- * Создание записи Гостем на свободный слот.
+ * Создание записи Гостем на свободный слот. 404 — тип события не найден.
  */
 export const createBooking = <ThrowOnError extends boolean = false>(options: Options<CreateBookingData, ThrowOnError>): RequestResult<CreateBookingResponses, CreateBookingErrors, ThrowOnError> => (options.client ?? client).post<CreateBookingResponses, CreateBookingErrors, ThrowOnError>({
     url: '/bookings',

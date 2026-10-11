@@ -1,9 +1,13 @@
-import { listEventTypes, listSlots } from './sdk.gen.js';
+import { createBooking, listEventTypes, listSlots } from './sdk.gen.js';
 
 const typeStep = document.getElementById('type-step');
 const timeStep = document.getElementById('time-step');
+const dataStep = document.getElementById('data-step');
+const confirmStep = document.getElementById('confirm-step');
 const stepTypeMarker = document.getElementById('step-type');
 const stepTimeMarker = document.getElementById('step-time');
+const stepDataMarker = document.getElementById('step-data');
+const stepConfirmMarker = document.getElementById('step-confirm');
 const typeGrid = document.getElementById('type-grid');
 const typesEmpty = document.getElementById('types-empty');
 const typeError = document.getElementById('type-error');
@@ -19,16 +23,42 @@ const daySlots = document.getElementById('day-slots');
 const slotsEmpty = document.getElementById('slots-empty');
 const slotsError = document.getElementById('slots-error');
 const timezoneNote = document.getElementById('timezone-note');
+const continueToData = document.getElementById('continue-to-data');
+const backToTime = document.getElementById('back-to-time');
+const dataSummary = document.getElementById('data-summary');
+const bookingForm = document.getElementById('booking-form');
+const bookingError = document.getElementById('booking-error');
+const nameInput = document.getElementById('guest-name');
+const emailInput = document.getElementById('guest-email');
+const noteInput = document.getElementById('guest-note');
+const submitBooking = document.getElementById('submit-booking');
+const confirmType = document.getElementById('confirm-type');
+const confirmWhen = document.getElementById('confirm-when');
+const confirmName = document.getElementById('confirm-name');
+const confirmEmail = document.getElementById('confirm-email');
+const confirmNote = document.getElementById('confirm-note');
 
 const DAYS_PER_PAGE = 7;
 const LOAD_TYPES_ERROR = 'Не удалось загрузить типы событий';
 const LOAD_SLOTS_ERROR = 'Не удалось загрузить слоты';
+const BOOKING_ERROR_MESSAGE = 'Не удалось создать запись';
+
+const STEP_ORDER = ['type', 'time', 'data', 'confirm'];
+const stepSections = { type: typeStep, time: timeStep, data: dataStep, confirm: confirmStep };
+const stepMarkers = {
+  type: stepTypeMarker,
+  time: stepTimeMarker,
+  data: stepDataMarker,
+  confirm: stepConfirmMarker,
+};
 
 // Часовой пояс и границы окна приходят только из ответа сервера.
 let timezone = null;
 let days = [];
 let page = 0;
 let selectedDayKey = null;
+let selectedEventType = null;
+let selectedStart = null;
 
 function showError(element, message) {
   element.textContent = message;
@@ -75,6 +105,15 @@ function dayTitle(iso) {
   }).format(new Date(iso));
 }
 
+function dayLong(iso) {
+  return new Intl.DateTimeFormat('ru-RU', {
+    timeZone: timezone,
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  }).format(new Date(iso));
+}
+
 function timeLabel(iso) {
   return new Intl.DateTimeFormat('ru-RU', {
     timeZone: timezone,
@@ -82,6 +121,13 @@ function timeLabel(iso) {
     minute: '2-digit',
     hour12: false,
   }).format(new Date(iso));
+}
+
+/** Дата, диапазон времени и часовой пояс — так запись выглядит на подтверждении. */
+function formatRange(iso, durationMinutes) {
+  const end = new Date(new Date(iso).getTime() + durationMinutes * 60000).toISOString();
+
+  return `${dayLong(iso)}, ${timeLabel(iso)}–${timeLabel(end)} (${timezone})`;
 }
 
 function slotPlural(count) {
@@ -100,17 +146,22 @@ function slotPlural(count) {
 }
 
 function showStep(name) {
-  const onTime = name === 'time';
+  const activeIndex = STEP_ORDER.indexOf(name);
 
-  typeStep.hidden = onTime;
-  timeStep.hidden = !onTime;
-  stepTypeMarker.classList.toggle('is-active', !onTime);
-  stepTypeMarker.classList.toggle('is-done', onTime);
-  stepTimeMarker.classList.toggle('is-active', onTime);
+  for (const step of STEP_ORDER) {
+    const position = STEP_ORDER.indexOf(step);
+    stepSections[step].hidden = step !== name;
 
-  if (onTime) {
-    stepTypeMarker.removeAttribute('aria-current');
-    stepTimeMarker.setAttribute('aria-current', 'step');
+    const marker = stepMarkers[step];
+    marker.classList.toggle('is-active', step === name);
+    marker.classList.toggle('is-done', position < activeIndex);
+    marker.classList.toggle('is-future', position > activeIndex);
+
+    if (step === name) {
+      marker.setAttribute('aria-current', 'step');
+    } else {
+      marker.removeAttribute('aria-current');
+    }
   }
 }
 
@@ -225,7 +276,7 @@ function renderDaySlots() {
     button.disabled = !slot.available;
 
     if (slot.available) {
-      button.addEventListener('click', () => selectSlot(button));
+      button.addEventListener('click', () => selectSlot(button, slot.start));
     } else {
       button.classList.add('is-busy');
       button.setAttribute('aria-label', `${timeLabel(slot.start)} — занято`);
@@ -235,7 +286,7 @@ function renderDaySlots() {
   }
 }
 
-function selectSlot(button) {
+function selectSlot(button, start) {
   for (const other of daySlots.querySelectorAll('.slot-button')) {
     other.classList.remove('is-selected');
     other.setAttribute('aria-pressed', 'false');
@@ -243,15 +294,31 @@ function selectSlot(button) {
 
   button.classList.add('is-selected');
   button.setAttribute('aria-pressed', 'true');
+
+  selectedStart = start;
+  continueToData.disabled = false;
 }
 
 function selectDay(key) {
   selectedDayKey = key;
+  selectedStart = null;
+  continueToData.disabled = true;
   renderDays();
   renderDaySlots();
 }
 
+function renderConfirmation(booking) {
+  confirmType.textContent = `${booking.eventTypeName} · ${booking.durationMinutes} мин`;
+  confirmWhen.textContent = formatRange(booking.start, booking.durationMinutes);
+  confirmName.textContent = booking.name;
+  confirmEmail.textContent = booking.email;
+  confirmNote.textContent = booking.note ?? '—';
+}
+
 async function openTimeStep(eventType) {
+  selectedEventType = eventType;
+  selectedStart = null;
+  continueToData.disabled = true;
   selectedType.textContent = `${eventType.name} · ${eventType.durationMinutes} мин`;
   showStep('time');
   await loadSlots(eventType.id);
@@ -311,6 +378,46 @@ backToTypes.addEventListener('click', () => {
   showStep('type');
 });
 
+backToTime.addEventListener('click', () => {
+  showStep('time');
+});
+
+continueToData.addEventListener('click', () => {
+  if (!selectedEventType || !selectedStart) {
+    return;
+  }
+
+  dataSummary.textContent = `${selectedEventType.name} · ${selectedEventType.durationMinutes} мин · ${formatRange(selectedStart, selectedEventType.durationMinutes)}`;
+  showStep('data');
+});
+
+bookingForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  hideError(bookingError);
+  submitBooking.disabled = true;
+
+  const note = noteInput.value.trim();
+  const { data, error } = await createBooking({
+    body: {
+      eventTypeId: selectedEventType.id,
+      start: selectedStart,
+      name: nameInput.value.trim(),
+      email: emailInput.value.trim(),
+      note: note === '' ? null : note,
+    },
+  });
+
+  submitBooking.disabled = false;
+
+  if (error) {
+    showError(bookingError, problemDetail(error) || BOOKING_ERROR_MESSAGE);
+    return;
+  }
+
+  renderConfirmation(data);
+  showStep('confirm');
+});
+
 prevDays.addEventListener('click', () => {
   if (page > 0) {
     page -= 1;
@@ -325,4 +432,5 @@ nextDays.addEventListener('click', () => {
   }
 });
 
+showStep('type');
 await loadTypes();
