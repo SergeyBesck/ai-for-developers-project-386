@@ -93,4 +93,39 @@ final class PagesTest extends TestCase
         self::assertStringNotContainsString('<a class="card type-card"', $html);
         self::assertStringNotContainsString('<a class="type-card"', $html);
     }
+
+    public function testEveryPageLinksToAdmin(): void
+    {
+        foreach (['index.html', 'booking.html', 'admin.html'] as $file) {
+            $html = self::page($file);
+
+            self::assertStringContainsString('href="admin.html"', $html, $file);
+            self::assertStringContainsString('>Админка<', $html, $file);
+        }
+    }
+
+    public function testAdminPageHasEventTypesTabAndEmptyState(): void
+    {
+        $html = self::page('admin.html');
+
+        self::assertStringContainsString('<html lang="ru">', $html);
+        self::assertStringContainsString('href="index.html"', $html);
+        self::assertStringContainsString('href="booking.html"', $html);
+        self::assertStringContainsString('Типы событий', $html);
+        self::assertStringContainsString('Типов событий ещё нет', $html);
+        self::assertStringContainsString('Создать тип события', $html);
+        self::assertStringContainsString('<dialog', $html);
+        self::assertStringContainsString('aria-current="page"', $html);
+        self::assertStringContainsString('assets/admin.js', $html);
+    }
+
+    public function testAdminPageUsesGeneratedSdk(): void
+    {
+        $js = self::page('assets/admin.js');
+
+        self::assertStringContainsString("from './sdk.gen.js'", $js);
+        self::assertStringContainsString('listEventTypes', $js);
+        self::assertStringContainsString('createEventType', $js);
+        self::assertStringContainsString('DUPLICATE_MESSAGE', $js);
+    }
 }

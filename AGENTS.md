@@ -17,6 +17,11 @@ PHP 8.3 без фреймворка (роутинг — league/route, валид
 - Тесты: `composer test`
 - Линт: `composer lint && npm run lint`
 
+## Конфигурация
+- Переменные окружения: `CALENDAR_DB_PATH` (файл SQLite, по умолчанию `var/calendar.sqlite`), `CALENDAR_TIMEZONE` (пояс приложения, по умолчанию `Europe/Moscow`).
+- `App\Kernel` собирает приложение на старте: схема SQLite, роутинг из generated/routes.php, валидация запросов и ответов против openapi.json, ошибки — problem+json.
+- Источник «сейчас» — `App\Clock`: в проде `App\SystemClock` (подмена невозможна), в тестах — фиксированные часы.
+
 ## Правила
 - Перед завершением задачи прогнать тесты и линтеры.
 - SQL только через PDO prepared statements.

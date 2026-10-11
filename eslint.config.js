@@ -6,6 +6,6 @@ export default [
   js.configs.recommended,
   {
     files: ['public/assets/**/*.js'],
-    languageOptions: { globals: globals.browser, sourceType: 'script' },
+    languageOptions: { globals: globals.browser, sourceType: 'module' },
   },
 ];

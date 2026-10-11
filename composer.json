@@ -1,7 +1,11 @@
 {
     "name": "sergeybesck/call-calendar",
     "require": {
-        "php": ">=8.3"
+        "php": ">=8.3",
+        "league/route": "7.0",
+        "league/openapi-psr7-validator": "0.24",
+        "nyholm/psr7": "1.8",
+        "nyholm/psr7-server": "^1.1"
     },
     "authors": [
         {
