@@ -167,6 +167,42 @@ final class SlotGridTest extends TestCase
         self::assertCount(0, array_filter($slots, static fn (array $slot): bool => !$slot['available']));
     }
 
+    public function testRejectStartAcceptsEverySlotStart(): void
+    {
+        // Согласованность по построению: любое начало из slotStarts допустимо для записи.
+        $now = self::moment('2026-10-11 12:00:00');
+
+        foreach (SlotGrid::slotStarts($now, self::TZ, 30) as $start) {
+            self::assertNull(
+                SlotGrid::rejectStart($now, self::TZ, 30, $start),
+                $start->format('Y-m-d H:i:s'),
+            );
+        }
+    }
+
+    public function testRejectStartExplainsEachRule(): void
+    {
+        $now = self::moment('2026-10-11 12:00:00');
+        $cases = [
+            '2026-10-11 11:45:00' => 'Время записи уже прошло',
+            '2026-10-11 12:07:00' => 'Начало должно стоять на сетке 15 минут',
+            '2026-10-11 12:15:00.500000' => 'Начало должно стоять на сетке 15 минут',
+            '2026-10-12 08:45:00' => 'Запись раньше начала рабочего дня (09:00)',
+            '2026-10-12 17:45:00' => 'Запись не укладывается до конца рабочего дня (18:00)',
+            '2026-10-12 18:00:00' => 'Запись не укладывается до конца рабочего дня (18:00)',
+            '2026-10-25 10:00:00' => 'Время записи дальше окна в 14 дней',
+            '2026-10-24 17:30:00' => null,
+        ];
+
+        foreach ($cases as $start => $expected) {
+            self::assertSame(
+                $expected,
+                SlotGrid::rejectStart($now, self::TZ, 30, self::moment($start)),
+                $start,
+            );
+        }
+    }
+
     private static function moment(string $time): DateTimeImmutable
     {
         return new DateTimeImmutable($time, new DateTimeZone(self::TZ));

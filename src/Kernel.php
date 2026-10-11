@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App;
 
+use App\Handler\CreateBookingHandler;
 use App\Handler\HandlerInterface;
 use App\Handler\ListSlotsHandler;
 use App\Http\Json;
@@ -34,6 +35,7 @@ final class Kernel
     private const SPEC_PATH = __DIR__ . '/../openapi.json';
 
     private readonly EventTypeRepository $eventTypes;
+    private readonly BookingRepository $bookings;
     private readonly Clock $clock;
     private readonly string $timezone;
     private readonly Router $router;
@@ -45,6 +47,7 @@ final class Kernel
         $database = new Database($config->databasePath);
         $database->migrate();
         $this->eventTypes = new EventTypeRepository($database, $clock);
+        $this->bookings = new BookingRepository($database, $clock);
         $this->clock = $clock;
         $this->timezone = $config->timezone;
 
@@ -85,14 +88,14 @@ final class Kernel
     {
         try {
             $response = $this->router->dispatch($request);
-        } catch (NotFoundException) {
+        } catch (NotFoundException | MethodNotAllowedException) {
+            // Запрос прошёл валидацию, значит операция описана в контракте, но обработчик
+            // не подключён: путь может быть закреплён за другим методом — это не 405.
             return Json::problem(
                 501,
                 'Операция не реализована',
                 sprintf('%s %s ещё не реализован', strtoupper($operation->method()), $operation->path()),
             );
-        } catch (MethodNotAllowedException $exception) {
-            return Json::problem(405, 'Метод не поддерживается', $exception->getMessage());
         }
 
         try {
@@ -143,7 +146,18 @@ final class Kernel
     private function makeHandler(string $handlerClass): HandlerInterface
     {
         return match ($handlerClass) {
-            ListSlotsHandler::class => new ListSlotsHandler($this->eventTypes, $this->clock, $this->timezone),
+            ListSlotsHandler::class => new ListSlotsHandler(
+                $this->eventTypes,
+                $this->bookings,
+                $this->clock,
+                $this->timezone,
+            ),
+            CreateBookingHandler::class => new CreateBookingHandler(
+                $this->eventTypes,
+                $this->bookings,
+                $this->clock,
+                $this->timezone,
+            ),
             default => new $handlerClass($this->eventTypes),
         };
     }

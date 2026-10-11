@@ -20,7 +20,7 @@
     "/bookings": {
       "post": {
         "operationId": "createBooking",
-        "description": "Создание записи Гостем на свободный слот.",
+        "description": "Создание записи Гостем на свободный слот. 404 — тип события не найден.",
         "parameters": [],
         "responses": {
           "201": {
@@ -35,6 +35,16 @@
           },
           "400": {
             "description": "The server could not understand the request due to invalid syntax.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The server cannot find the requested resource.",
             "content": {
               "application/problem+json": {
                 "schema": {

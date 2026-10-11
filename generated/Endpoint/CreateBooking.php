@@ -6,7 +6,7 @@ class CreateBooking extends \App\Generated\Runtime\Client\BaseEndpoint implement
 {
     protected $accept;
     /**
-     * Создание записи Гостем на свободный слот.
+     * Создание записи Гостем на свободный слот. 404 — тип события не найден.
      * @param \App\Generated\Model\BookingCreate $requestBody
      * @param array $accept Accept content header application/json|application/problem+json
      */
@@ -42,6 +42,7 @@ class CreateBooking extends \App\Generated\Runtime\Client\BaseEndpoint implement
      * {@inheritdoc}
      *
      * @throws \App\Generated\Exception\CreateBookingBadRequestException
+     * @throws \App\Generated\Exception\CreateBookingNotFoundException
      * @throws \App\Generated\Exception\CreateBookingConflictException
      * @throws \App\Generated\Exception\CreateBookingUnprocessableEntityException
      * @throws \App\Generated\Exception\BadResponseException
@@ -57,6 +58,9 @@ class CreateBooking extends \App\Generated\Runtime\Client\BaseEndpoint implement
         }
         if ($contentType !== null && (400 === $status && stripos(strtolower($contentType), 'application/problem+json') !== false)) {
             throw new \App\Generated\Exception\CreateBookingBadRequestException($serializer->deserialize($body, 'App\Generated\Model\Problem', 'json'), $response);
+        }
+        if ($contentType !== null && (404 === $status && stripos(strtolower($contentType), 'application/problem+json') !== false)) {
+            throw new \App\Generated\Exception\CreateBookingNotFoundException($serializer->deserialize($body, 'App\Generated\Model\Problem', 'json'), $response);
         }
         if ($contentType !== null && (409 === $status && stripos(strtolower($contentType), 'application/problem+json') !== false)) {
             throw new \App\Generated\Exception\CreateBookingConflictException($serializer->deserialize($body, 'App\Generated\Model\Problem', 'json'), $response);

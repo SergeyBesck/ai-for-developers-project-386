@@ -77,6 +77,58 @@ final class SlotGrid
     }
 
     /**
+     * Причина, по которой начало не может быть началом слота, или null, если начало допустимо.
+     * Правила те же, что в slotStarts: «сейчас» — из инжектируемых часов, начало на сетке,
+     * внутри рабочего дня 09:00–18:00 (с округлённой вверх длительностью), в окне 14 дней
+     * и не в прошлом.
+     */
+    public static function rejectStart(
+        DateTimeImmutable $now,
+        string $timezone,
+        int $durationMinutes,
+        DateTimeImmutable $start,
+    ): ?string {
+        $appTimezone = new DateTimeZone($timezone);
+        $now = $now->setTimezone($appTimezone);
+        $start = $start->setTimezone($appTimezone);
+
+        if ($start < $now) {
+            return 'Время записи уже прошло';
+        }
+
+        $minute = (int) $start->format('i');
+
+        if (
+            $minute % self::STEP_MINUTES !== 0
+            || (int) $start->format('s') !== 0
+            || (int) $start->format('u') !== 0
+        ) {
+            return sprintf('Начало должно стоять на сетке %d минут', self::STEP_MINUTES);
+        }
+
+        $today = self::ceilToStep($now)->setTime(0, 0, 0);
+        $windowEnd = $today->modify(sprintf('+%d days', self::WINDOW_DAYS));
+
+        if ($start >= $windowEnd) {
+            return sprintf('Время записи дальше окна в %d дней', self::WINDOW_DAYS);
+        }
+
+        // Границы рабочего дня проверяются для дня, в который попадает начало.
+        if ($start < $start->setTime(self::DAY_START_HOUR, 0, 0)) {
+            return sprintf('Запись раньше начала рабочего дня (%02d:00)', self::DAY_START_HOUR);
+        }
+
+        $workdayEnd = $start->setTime(self::DAY_END_HOUR, 0, 0);
+        $duration = self::roundedDurationMinutes($durationMinutes);
+
+        if ($start->modify(sprintf('+%d minutes', $duration)) > $workdayEnd) {
+            return sprintf('Запись не укладывается до конца рабочего дня (%02d:00)', self::DAY_END_HOUR);
+        }
+
+        return null;
+    }
+
+    /**
      * Начала слотов на окно записи в поясе приложения: от «сейчас», округлённого вверх до сетки,
      * до конца 14-го дня (сегодня — день 1). Каждый день — 09:00–18:00; начало строго на сетке;
      * слот есть, только если округлённая вверх длительность укладывается до 18:00.

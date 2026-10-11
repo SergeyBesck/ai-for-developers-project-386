@@ -124,6 +124,10 @@ export type CreateBookingErrors = {
      */
     400: Problem;
     /**
+     * The server cannot find the requested resource.
+     */
+    404: Problem;
+    /**
      * The request conflicts with the current state of the server.
      */
     409: Problem;

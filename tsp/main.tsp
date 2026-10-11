@@ -186,8 +186,8 @@ op listSlots(@path id: string): SlotsResponse | Problem404;
 @tag("Bookings")
 @post
 @route("/bookings")
-@doc("Создание записи Гостем на свободный слот.")
-op createBooking(@body body: BookingCreate): CreatedBooking | Problem400 | Problem409 | Problem422;
+@doc("Создание записи Гостем на свободный слот. 404 — тип события не найден.")
+op createBooking(@body body: BookingCreate): CreatedBooking | Problem400 | Problem404 | Problem409 | Problem422;
 
 @tag("Bookings")
 @get

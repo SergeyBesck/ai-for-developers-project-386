@@ -143,4 +143,48 @@ final class PagesTest extends TestCase
         self::assertStringNotContainsString('fetch(', $js);
         self::assertStringNotContainsString('innerHTML', $js);
     }
+
+    public function testBookingPageHasDataAndConfirmSteps(): void
+    {
+        $html = self::page('booking.html');
+
+        self::assertStringContainsString('id="continue-to-data"', $html);
+        self::assertStringContainsString('>Продолжить</button>', $html);
+        self::assertStringContainsString('id="data-step"', $html);
+        self::assertStringContainsString('id="booking-form"', $html);
+        self::assertStringContainsString('id="guest-name"', $html);
+        self::assertStringContainsString('id="guest-email"', $html);
+        self::assertStringContainsString('id="guest-note"', $html);
+        self::assertStringContainsString('maxlength="100"', $html);
+        self::assertStringContainsString('maxlength="500"', $html);
+        self::assertStringContainsString('id="confirm-step"', $html);
+        self::assertStringContainsString('id="confirm-type"', $html);
+        self::assertStringContainsString('id="confirm-when"', $html);
+        self::assertStringContainsString('id="confirm-name"', $html);
+        self::assertStringContainsString('id="confirm-email"', $html);
+        self::assertStringContainsString('id="confirm-note"', $html);
+        self::assertStringContainsString('href="index.html">На главную</a>', $html);
+    }
+
+    public function testBookingScriptCreatesBookingThroughGeneratedSdk(): void
+    {
+        $js = self::page('assets/booking.js');
+
+        self::assertStringContainsString('createBooking', $js);
+        self::assertStringContainsString("from './sdk.gen.js'", $js);
+        self::assertStringNotContainsString('fetch(', $js);
+        self::assertStringNotContainsString('innerHTML', $js);
+    }
+
+    public function testBookingScriptPuts400ErrorsOnFieldsAndReturnsToTimeOnConflict(): void
+    {
+        $js = self::page('assets/booking.js');
+
+        self::assertStringContainsString('guest-name-error', $js);
+        self::assertStringContainsString('guest-email-error', $js);
+        self::assertStringContainsString('guest-note-error', $js);
+        self::assertStringContainsString('applyFieldErrors', $js);
+        self::assertStringContainsString('Время уже заняли, выберите другое.', $js);
+        self::assertStringContainsString('status === 409', $js);
+    }
 }

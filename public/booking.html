@@ -61,7 +61,64 @@
         <p id="day-slots-title" class="day-slots-title"></p>
         <div id="day-slots" class="slot-list" role="group" aria-label="Слоты выбранного дня"></div>
         <p id="timezone-note" class="timezone-note"></p>
+        <div class="time-actions">
+          <button type="button" id="continue-to-data" class="btn btn-primary" disabled>Продолжить</button>
+        </div>
       </div>
+    </section>
+
+    <section id="data-step" aria-labelledby="data-title" hidden>
+      <h1 class="booking-title" id="data-title">Ваши данные</h1>
+      <p id="data-summary" class="lead"></p>
+      <button type="button" id="back-to-time" class="back-button">← Другое время</button>
+      <p id="booking-error" class="form-error" hidden></p>
+      <form id="booking-form" class="booking-form">
+        <div class="field">
+          <label class="field-label" for="guest-name">Имя *</label>
+          <input id="guest-name" name="name" type="text" maxlength="100" required autocomplete="name">
+          <p id="guest-name-error" class="field-error" hidden></p>
+        </div>
+        <div class="field">
+          <label class="field-label" for="guest-email">Email *</label>
+          <input id="guest-email" name="email" type="email" required autocomplete="email">
+          <p id="guest-email-error" class="field-error" hidden></p>
+        </div>
+        <div class="field">
+          <label class="field-label" for="guest-note">Заметка</label>
+          <textarea id="guest-note" name="note" rows="3" maxlength="500"></textarea>
+          <p id="guest-note-error" class="field-error" hidden></p>
+        </div>
+        <button type="submit" id="submit-booking" class="btn btn-primary">Записаться</button>
+      </form>
+    </section>
+
+    <section id="confirm-step" aria-labelledby="confirm-title" hidden>
+      <h1 class="booking-title" id="confirm-title">Вы записаны</h1>
+      <div class="card confirm-card">
+        <dl class="confirm-list">
+          <div class="confirm-row">
+            <dt>Тип события</dt>
+            <dd id="confirm-type"></dd>
+          </div>
+          <div class="confirm-row">
+            <dt>Дата и время</dt>
+            <dd id="confirm-when"></dd>
+          </div>
+          <div class="confirm-row">
+            <dt>Имя</dt>
+            <dd id="confirm-name"></dd>
+          </div>
+          <div class="confirm-row">
+            <dt>Email</dt>
+            <dd id="confirm-email"></dd>
+          </div>
+          <div class="confirm-row">
+            <dt>Заметка</dt>
+            <dd id="confirm-note"></dd>
+          </div>
+        </dl>
+      </div>
+      <a class="btn btn-primary" href="index.html">На главную</a>
     </section>
   </main>
 
