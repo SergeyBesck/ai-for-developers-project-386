@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Выберите тип события — Calendar</title>
-  <meta name="description" content="Выберите тип события, чтобы открыть календарь и выбрать удобный слот.">
+  <title>Запись на звонок — Calendar</title>
+  <meta name="description" content="Выберите тип события и удобное время для звонка.">
   <link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
@@ -21,7 +21,7 @@
         <span class="brand-name">Calendar</span>
       </a>
       <nav class="header-nav" aria-label="Основная навигация">
-        <a class="header-link" href="booking.html">Записаться</a>
+        <a class="header-link" href="booking.html" aria-current="page">Записаться</a>
         <a class="header-link" href="admin.html">Админка</a>
       </nav>
     </div>
@@ -30,34 +30,41 @@
   <main class="container booking">
     <a class="back-link" href="index.html">← На главную</a>
 
-    <div class="card host-card">
-      <span class="host-avatar" aria-hidden="true">T</span>
-      <div class="host-meta">
-        <p class="host-name">Tota</p>
-        <p class="host-role">Host</p>
+    <ol class="stepper" aria-label="Шаги записи">
+      <li class="step is-active" id="step-type" aria-current="step">Тип</li>
+      <li class="step" id="step-time">Время</li>
+      <li class="step is-future" id="step-data">Данные</li>
+      <li class="step is-future" id="step-confirm">Подтверждение</li>
+    </ol>
+
+    <section id="type-step" aria-labelledby="type-title">
+      <h1 class="booking-title" id="type-title">Выберите тип события</h1>
+      <p class="lead">Нажмите на карточку, чтобы открыть календарь и выбрать удобный слот.</p>
+      <p id="type-error" class="admin-error" hidden></p>
+      <p id="types-empty" class="empty-state" hidden>Типов событий ещё нет</p>
+      <div id="type-grid" class="type-grid"></div>
+    </section>
+
+    <section id="time-step" aria-labelledby="time-title" hidden>
+      <h1 class="booking-title" id="time-title">Выберите время</h1>
+      <p id="selected-type" class="lead"></p>
+      <button type="button" id="back-to-types" class="back-button">← Другой тип</button>
+      <p id="slots-error" class="admin-error" hidden></p>
+      <p id="slots-empty" class="empty-state" hidden>Свободных слотов на ближайшие дни нет</p>
+      <div id="calendar" class="calendar" hidden>
+        <p id="window-range" class="window-range"></p>
+        <div class="days-nav">
+          <button type="button" id="prev-days" class="days-arrow" aria-label="Предыдущие дни">‹</button>
+          <div id="days" class="days" role="group" aria-label="Дни записи"></div>
+          <button type="button" id="next-days" class="days-arrow" aria-label="Следующие дни">›</button>
+        </div>
+        <p id="day-slots-title" class="day-slots-title"></p>
+        <div id="day-slots" class="slot-list" role="group" aria-label="Слоты выбранного дня"></div>
+        <p id="timezone-note" class="timezone-note"></p>
       </div>
-    </div>
-
-    <h1 class="booking-title">Выберите тип события</h1>
-    <p class="lead">Нажмите на карточку, чтобы открыть календарь и выбрать удобный слот.</p>
-
-    <div class="type-grid">
-      <article class="card type-card">
-        <div class="type-head">
-          <h2>Встреча 15 минут</h2>
-          <span class="badge">15 мин</span>
-        </div>
-        <p>Короткий тип события для быстрого слота.</p>
-      </article>
-
-      <article class="card type-card">
-        <div class="type-head">
-          <h2>Встреча 30 минут</h2>
-          <span class="badge">30 мин</span>
-        </div>
-        <p>Базовый тип события для бронирования.</p>
-      </article>
-    </div>
+    </section>
   </main>
+
+  <script type="module" src="assets/booking.js"></script>
 </body>
 </html>
