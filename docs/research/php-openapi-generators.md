@@ -150,6 +150,31 @@ PHP-атрибуты/аннотации → OpenAPI-спека («Generate inter
 4. **Бэклоги**: у OpenAPI Generator 5749 issues, у league-валидатора 77 — инструменты живые, но «внимания к мелочам» ждать не стоит.
 5. **FastRoute** — стабильный релив 2018 года; если нужен «релизный» роутер, предпочтительнее `league/route` 7.0.0.
 
+## Дополнение 11.10.2026: проверка в чистой папке и утверждённая цепочка
+
+Проверено фактически (`composer require` / `npm i` в чистых папках, пробные генерации на минимальном контракте с `EventTypeCreate`). Решение по стеку утверждено владельцем (тикет #14): **Java и openapi-generator убраны из цепочки**, клиентский SDK — `@hey-api/openapi-ts`; маршрутный `templateDir` заменён скриптом цепочки, строящим таблицу маршрутов из `openapi.json`.
+
+### Точная сверка пакетов (11.10.2026)
+
+- `jane-php/open-api-3` **8.0.1** — «Generate a PHP Client API (PSR7/PSR18 compatible) given a OpenApi 3.x specification», PHP `^8.3`; рантайм-зависимости — `symfony/serializer`, `symfony/yaml` (компоненты, не фреймворк); CLI — `vendor/bin/jane-openapi generate`.
+- `league/openapi-psr7-validator` **0.24** — валидация PSR-7 сообщений по OpenAPI 3.0.2, позиционируется как PSR-15 middleware (без фреймворка).
+- `league/route` **7.0.0** — «Fast routing and dispatch component including PSR-15 middleware, built on top of nikic/fast-route».
+
+### jane: что именно генератор пишет на диск (пробный прогон)
+
+31 файл: **3 Model** (DTO с типизированными свойствами), **4 Normalizer** (сериализация через `symfony/serializer`), **14 Runtime** (поддержка нормализаторов), **1 Client**, **1 Endpoint**, **8 Exceptions**. Для сервера полезны только `Model` + `Normalizer` (+`Runtime`); `Client`/`Endpoint`/`Exceptions` — клиентская часть, сервером **не используется**. Отключить её в конфиге нельзя: `JaneOpenApi::generators()` всегда включает `EndpointGenerator`; из опций близко только `generate-error-exceptions: false` (убирает 8 файлов исключений, остальное генерируется). Конфиг — PHP-файл `.jane-openapi`, возвращающий массив (`openapi-file`, `namespace`, `directory`, опционально `strict` и др.).
+
+### `@hey-api/openapi-ts` 0.99.0 (пробный прогон на том же контракте)
+
+- Запуск: `npx @hey-api/openapi-ts -i openapi.json -o client` либо с конфигом `hey-api.config.mjs` (`{ input, output: { path } }`) — **только через явный `-f`**: автопоиск конфига в 0.99.0 падает (`Cannot read properties of undefined (reading 'importFileExtension')`), воспроизводится стабильно.
+- Выход: `client.gen.ts`, `sdk.gen.ts`, `types.gen.ts` + TS-рантайм (`client/`, `core/`). `operationId: createEventType` → функция `createEventType`. Клиент fetch-based, без Node-зависимостей, пригоден для браузера.
+- Вывод — **только TypeScript**: для ванильного фронта нужен шаг сборки (esbuild, ESM-бандл в `public/assets/`, фронт подключает `<script type="module">`; сам фронт без сборки остаётся).
+- В спеке должен быть блок `servers`: без него `baseUrl` в `client.gen.ts` берётся из строки-входа (в пробном прогоне получился мусорный `baseUrl: 'openapi.json'`); либо фронт задаёт baseUrl через `client.setConfig`.
+
+### Итоговая цепочка (утверждена, тикет #14)
+
+`npm run generate`: `tsp compile` (`@typespec/openapi3` 1.17.0) → `jane-openapi generate` → `scripts/generate-routes.mjs` (таблица маршрутов из `openapi.json`; `templateDir` OpenAPI Generator не используется) → `@hey-api/openapi-ts -f` → `esbuild` 0.28.2 (бандл SDK). Точные версии генераторов без `^`; `generated/` коммитится, исключён из линтеров, подключён в автозагрузку; CI ставит Node и PHP и проверяет `git diff --exit-code`.
+
 ## Источники
 
 - Тикет: https://github.com/SergeyBesck/ai-for-developers-project-386/issues/13
