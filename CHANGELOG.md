@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.3.0](https://github.com/SergeyBesck/ai-for-developers-project-386/compare/my-project-v1.2.0...my-project-v1.3.0) (2026-10-11)
+
+
+### Features
+
+* **bookings:** гость записывается на слот ([310702e](https://github.com/SergeyBesck/ai-for-developers-project-386/commit/310702ee02723bebcc188e153863f7f6a57c265e))
+* **bookings:** хост видит предстоящие записи ([03387f6](https://github.com/SergeyBesck/ai-for-developers-project-386/commit/03387f64208739ad00645b08d576a3eb59b9849c))
+* **booking:** запись создаётся транзакцией, шаги Данные и Подтверждение ([0c04029](https://github.com/SergeyBesck/ai-for-developers-project-386/commit/0c04029b8b9a655a3a2c6e6541cf6bb0c1c636f8))
+* **booking:** конфликты и валидация записи — 409, 422 и ошибки формы ([344c6e6](https://github.com/SergeyBesck/ai-for-developers-project-386/commit/344c6e688e4f14ac6bbebfc5eb44f69ef01f61f4))
+* **booking:** предстоящие записи — GET /bookings и вкладка админки ([faf2a15](https://github.com/SergeyBesck/ai-for-developers-project-386/commit/faf2a15a7362a95378ef91b929ad88ac8808f0dd))
+* **booking:** страница записи с шагами Тип и Время через сгенерированный SDK ([6f67e53](https://github.com/SergeyBesck/ai-for-developers-project-386/commit/6f67e53d09f88624062c6454fbbfc34d7d087125))
+* **event-types:** каркас приложения, API типов событий и админка ([045c83d](https://github.com/SergeyBesck/ai-for-developers-project-386/commit/045c83de182b2ece5955ebed9bcda3f51940cb16))
+* **event-types:** хост создаёт тип события ([ed4a240](https://github.com/SergeyBesck/ai-for-developers-project-386/commit/ed4a240464bd5656cedf0fe022b5e09ee964362e))
+* **slots:** расчёт сетки слотов, /event-types/{id}/slots, шаги Тип и Время ([a0ea9a0](https://github.com/SergeyBesck/ai-for-developers-project-386/commit/a0ea9a0fc235343a0fdf8c37b3291822b2ee5571))
+* **slots:** чистые функции сетки и занятости, GET /event-types/{id}/slots ([14ac44e](https://github.com/SergeyBesck/ai-for-developers-project-386/commit/14ac44ee2656899ab74784eab59436088ca68987))
+
 ## [1.2.0](https://github.com/SergeyBesck/ai-for-developers-project-386/compare/my-project-v1.1.0...my-project-v1.2.0) (2026-10-11)
 
 
