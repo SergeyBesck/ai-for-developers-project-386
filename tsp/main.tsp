@@ -34,6 +34,7 @@ model EventTypeCreate {
   @pattern("^[a-z0-9]+(-[a-z0-9]+)*$")
   id: string;
 
+  @minLength(1)
   name: string;
 
   description?: string | null;

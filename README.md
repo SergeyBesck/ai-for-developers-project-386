@@ -23,10 +23,39 @@ npm ci
 
 ## Использование
 
+```bash
 php -S localhost:8000 -t public public/router.php
 composer test
 composer lint
 npm run lint
+```
+
+Страницы: главная — `index.html`, запись — `booking.html`, админка Хоста — `admin.html` (ссылка «Админка» есть в шапке всех страниц).
+
+## Конфигурация
+
+Настройки задаются переменными окружения:
+
+| Переменная | По умолчанию | Назначение |
+| --- | --- | --- |
+| `CALENDAR_DB_PATH` | `var/calendar.sqlite` | Путь к файлу SQLite, каталог создаётся на старте |
+| `CALENDAR_TIMEZONE` | `Europe/Moscow` | Часовой пояс приложения (IANA-идентификатор) |
+
+Схема SQLite создаётся на старте приложения (миграция идемпотентна). Источник «сейчас» — `App\Clock`: в проде собирается как `SystemClock` из конфигурации, в тестах подменяется фиксированными часами.
+
+## API
+
+Контракт — `openapi.json` (порождён из TypeSpec). Запросы и ответы валидируются против него (`league/openapi-psr7-validator`), ошибки отдаются в формате `application/problem+json`. Маршруты берутся из `generated/routes.php`, обработчики — `src/Handler/`.
+
+Примеры:
+
+```bash
+curl -X POST http://localhost:8000/api/event-types \
+  -H "Content-Type: application/json" \
+  -d '{"id":"consult","name":"Консультация","durationMinutes":30}'
+
+curl http://localhost:8000/api/event-types
+```
 
 ## Генерация кода из контракта
 
