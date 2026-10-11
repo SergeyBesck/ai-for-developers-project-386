@@ -8,8 +8,9 @@
     "test": "tests"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "lint": "eslint public/assets",
+    "test": "npm run test:sdk",
+    "test:sdk": "node --test \"tests/js/*.test.mjs\"",
+    "lint": "eslint public/assets tests/js",
     "gen:openapi": "tsp compile tsp",
     "gen:php": "php vendor/bin/jane-openapi generate",
     "gen:routes": "node scripts/generate-routes.mjs",

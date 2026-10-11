@@ -28,6 +28,7 @@ php -S localhost:8000 -t public public/router.php
 composer test
 composer lint
 npm run lint
+npm run test:sdk
 ```
 
 Страницы: главная — `index.html`, запись — `booking.html`, админка Хоста — `admin.html` (ссылка «Админка» есть в шапке всех страниц).

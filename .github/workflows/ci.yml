@@ -25,6 +25,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run lint
+      - run: npm run test:sdk
 
   generate:
     runs-on: ubuntu-latest

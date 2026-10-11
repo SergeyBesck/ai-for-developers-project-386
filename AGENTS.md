@@ -14,7 +14,7 @@ PHP 8.3 без фреймворка (роутинг — league/route, валид
 ## Команды
 - Запуск: `php -S localhost:8000 -t public public/router.php`
 - Генерация артефактов: `npm run generate`
-- Тесты: `composer test`
+- Тесты: `composer test` (PHP), `npm run test:sdk` (смоук бандла SDK, `node --test`)
 - Линт: `composer lint && npm run lint`
 
 ## Конфигурация
