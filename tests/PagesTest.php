@@ -58,7 +58,7 @@ final class PagesTest extends TestCase
         self::assertStringNotContainsString('app.js', self::page('index.html'));
     }
 
-    public function testBookingPageIsAWorkingStub(): void
+    public function testBookingPageIsAFunnelWithSteps(): void
     {
         $html = self::page('booking.html');
 
@@ -66,32 +66,35 @@ final class PagesTest extends TestCase
         self::assertStringContainsString('href="index.html"', $html);
         self::assertStringContainsString('На главную', $html);
         self::assertStringContainsString('Выберите тип события', $html);
-        self::assertStringContainsString(
-            'Нажмите на карточку, чтобы открыть календарь и выбрать удобный слот.',
-            $html,
-        );
-        self::assertStringContainsString('Tota', $html);
-        self::assertStringContainsString('>Host<', $html);
+        self::assertStringContainsString('Выберите время', $html);
+        self::assertStringContainsString('Нажмите на карточку, чтобы открыть календарь и выбрать удобный слот.', $html);
+        self::assertStringContainsString('class="stepper"', $html);
+        self::assertStringContainsString('>Тип<', $html);
+        self::assertStringContainsString('>Время<', $html);
+        self::assertStringContainsString('>Данные<', $html);
+        self::assertStringContainsString('>Подтверждение<', $html);
+        self::assertStringContainsString('aria-current="step"', $html);
     }
 
-    public function testBookingPageListsEventTypes(): void
+    public function testBookingPageHasNoStaticEventTypes(): void
     {
         $html = self::page('booking.html');
 
-        self::assertStringContainsString('Встреча 15 минут', $html);
-        self::assertStringContainsString('15 мин', $html);
-        self::assertStringContainsString('Короткий тип события для быстрого слота.', $html);
-        self::assertStringContainsString('Встреча 30 минут', $html);
-        self::assertStringContainsString('30 мин', $html);
-        self::assertStringContainsString('Базовый тип события для бронирования.', $html);
+        self::assertStringNotContainsString('Встреча 15 минут', $html);
+        self::assertStringNotContainsString('Встреча 30 минут', $html);
+        self::assertStringNotContainsString('Tota', $html);
     }
 
-    public function testEventTypeCardsAreNotLinks(): void
+    public function testBookingPageHasCalendarControlsAndTimezoneNote(): void
     {
         $html = self::page('booking.html');
 
-        self::assertStringNotContainsString('<a class="card type-card"', $html);
-        self::assertStringNotContainsString('<a class="type-card"', $html);
+        self::assertStringContainsString('id="calendar"', $html);
+        self::assertStringContainsString('id="days"', $html);
+        self::assertStringContainsString('id="prev-days"', $html);
+        self::assertStringContainsString('id="next-days"', $html);
+        self::assertStringContainsString('id="window-range"', $html);
+        self::assertStringContainsString('id="timezone-note"', $html);
     }
 
     public function testEveryPageLinksToAdmin(): void
@@ -127,5 +130,17 @@ final class PagesTest extends TestCase
         self::assertStringContainsString('listEventTypes', $js);
         self::assertStringContainsString('createEventType', $js);
         self::assertStringContainsString('DUPLICATE_MESSAGE', $js);
+    }
+
+    public function testBookingScriptUsesGeneratedSdkWithoutManualFetch(): void
+    {
+        $js = self::page('assets/booking.js');
+
+        self::assertStringContainsString("from './sdk.gen.js'", $js);
+        self::assertStringContainsString('listEventTypes', $js);
+        self::assertStringContainsString('listSlots', $js);
+        self::assertStringContainsString('textContent', $js);
+        self::assertStringNotContainsString('fetch(', $js);
+        self::assertStringNotContainsString('innerHTML', $js);
     }
 }

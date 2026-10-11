@@ -493,6 +493,241 @@ dialog.modal::backdrop {
   margin-top: 18px;
 }
 
+/* Воронка записи: шаги */
+
+.stepper {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 22px;
+  margin: 0 0 32px;
+  padding: 0;
+  list-style: none;
+  counter-reset: step;
+}
+
+.step {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  counter-increment: step;
+}
+
+.step::before {
+  content: counter(step);
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  background: var(--color-surface);
+  font-size: 0.82rem;
+}
+
+.step.is-active {
+  color: var(--color-text);
+}
+
+.step.is-active::before {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+
+.step.is-done::before {
+  border-color: var(--color-accent);
+  color: var(--color-accent-strong);
+}
+
+.step.is-future {
+  opacity: 0.65;
+}
+
+.back-button {
+  display: inline-block;
+  margin-bottom: 18px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 0.95rem;
+  text-decoration: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.back-button:hover,
+.back-button:focus-visible {
+  color: var(--color-accent);
+}
+
+.type-card-button {
+  padding: 24px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.type-card-button:hover,
+.type-card-button:focus-visible {
+  border-color: var(--color-accent);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 12px 32px rgba(249, 115, 22, 0.16);
+}
+
+.type-card-button h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.type-card-button p {
+  margin: 10px 0 0;
+  font-size: 0.95rem;
+  color: var(--color-text-muted);
+}
+
+/* Календарь слотов */
+
+.calendar {
+  margin-top: 28px;
+}
+
+.window-range {
+  margin: 0 0 14px;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.days-nav {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+}
+
+.days-arrow {
+  min-width: 42px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-btn);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 1.2rem;
+  cursor: pointer;
+}
+
+.days-arrow:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.days-arrow:not(:disabled):hover,
+.days-arrow:not(:disabled):focus-visible {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.days {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+  flex: 1;
+}
+
+.day-button {
+  display: grid;
+  gap: 2px;
+  justify-items: center;
+  padding: 10px 6px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-btn);
+  background: var(--color-surface);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.day-button:not(:disabled):hover,
+.day-button:not(:disabled):focus-visible {
+  border-color: var(--color-accent);
+}
+
+.day-button.is-selected {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+
+.day-button:disabled {
+  background: var(--color-bg);
+  color: var(--color-text-muted);
+  opacity: 0.55;
+  cursor: default;
+}
+
+.day-note {
+  font-size: 0.72rem;
+  font-weight: 500;
+  opacity: 0.85;
+}
+
+.day-slots-title {
+  margin: 20px 0 12px;
+  font-size: 1.02rem;
+}
+
+.slot-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 8px;
+}
+
+.slot-button {
+  padding: 12px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-btn);
+  background: var(--color-surface);
+  font: inherit;
+  font-weight: 600;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.slot-button:not(:disabled):hover,
+.slot-button:not(:disabled):focus-visible {
+  border-color: var(--color-accent);
+  color: var(--color-accent-strong);
+}
+
+.slot-button.is-selected {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+
+.slot-button.is-busy,
+.slot-button:disabled {
+  background: var(--color-bg);
+  color: var(--color-text-muted);
+  text-decoration: line-through;
+  cursor: default;
+}
+
+.timezone-note {
+  margin: 16px 0 0;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
 /* Адаптив */
 
 @media (max-width: 768px) {
@@ -507,5 +742,9 @@ dialog.modal::backdrop {
 
   .features {
     padding: 24px;
+  }
+
+  .days {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
