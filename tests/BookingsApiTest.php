@@ -16,7 +16,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ResponseInterface;
 
 /**
- * HTTP-тесты POST /bookings и согласованности записей со списком слотов: временная SQLite,
+ * HTTP-тесты POST /bookings, GET /bookings и согласованности записей со списком слотов: временная SQLite,
  * «сейчас» фиксируется инжектированными часами, ответы сверяются с openapi.json.
  */
 final class BookingsApiTest extends TestCase
@@ -67,7 +67,7 @@ final class BookingsApiTest extends TestCase
 
         self::assertSame(201, $response->getStatusCode());
         self::assertStringStartsWith('application/json', $response->getHeaderLine('Content-Type'));
-        $this->assertMatchesContract($response);
+        $this->assertMatchesContract($response, 'post');
 
         $booking = $this->decode($response);
         self::assertMatchesRegularExpression(self::UUID_PATTERN, $booking['id']);
@@ -161,7 +161,7 @@ final class BookingsApiTest extends TestCase
 
         self::assertSame(404, $response->getStatusCode());
         $this->assertProblem($response, 404);
-        $this->assertMatchesContract($response);
+        $this->assertMatchesContract($response, 'post');
     }
 
     public function testOverlappingBookingReturns409AndLeavesNoTrace(): void
@@ -179,7 +179,7 @@ final class BookingsApiTest extends TestCase
 
         self::assertSame(409, $conflict->getStatusCode());
         $this->assertProblem($conflict, 409);
-        $this->assertMatchesContract($conflict);
+        $this->assertMatchesContract($conflict, 'post');
 
         // Откат полный: не осталось ни ячеек, ни записи отклонённой попытки.
         self::assertSame(1, $this->scalar('SELECT COUNT(*) FROM bookings'));
@@ -233,7 +233,7 @@ final class BookingsApiTest extends TestCase
 
             self::assertSame(422, $response->getStatusCode(), $label);
             $this->assertProblem($response, 422);
-            $this->assertMatchesContract($response);
+            $this->assertMatchesContract($response, 'post');
         }
 
         // Ни одна отклонённая попытка не оставила записей.
@@ -270,7 +270,7 @@ final class BookingsApiTest extends TestCase
 
             self::assertSame(400, $response->getStatusCode(), $label);
             $this->assertProblem($response, 400);
-            $this->assertMatchesContract($response);
+            $this->assertMatchesContract($response, 'post');
         }
 
         self::assertSame(0, $this->scalar('SELECT COUNT(*) FROM bookings'));
@@ -316,6 +316,92 @@ final class BookingsApiTest extends TestCase
         ));
     }
 
+    public function testListBookingsReturnsUpcomingSortedByStartAcrossEventTypes(): void
+    {
+        $this->createEventType('intro-call', 'Звонок знакомства', 30);
+        $this->createEventType('quick-call', 'Быстрый созвон', 15);
+
+        // Записи создаются не по порядку: список обязан отсортироваться по start на сервере.
+        $this->book('quick-call', '2026-10-13T11:00:00+03:00');
+        $this->book('quick-call', '2026-10-12T15:00:00+03:00');
+        $this->book('intro-call', '2026-10-12T10:00:00+03:00', [
+            'name' => 'Анна',
+            'email' => 'anna@example.com',
+            'note' => 'Обсудим запуск продукта',
+        ]);
+
+        $response = $this->request('GET', '/api/bookings');
+
+        self::assertSame(200, $response->getStatusCode());
+        self::assertStringStartsWith('application/json', $response->getHeaderLine('Content-Type'));
+        $this->assertMatchesContract($response, 'get');
+
+        $data = $this->decode($response);
+        self::assertSame('Europe/Moscow', $data['timezone']);
+        self::assertSame(
+            ['2026-10-12T10:00:00+03:00', '2026-10-12T15:00:00+03:00', '2026-10-13T11:00:00+03:00'],
+            array_column($data['bookings'], 'start'),
+        );
+
+        // Записи разных типов в одном списке, схема — та же, что у createBooking.
+        self::assertSame(['intro-call', 'quick-call', 'quick-call'], array_column($data['bookings'], 'eventTypeId'));
+        self::assertSame(
+            ['Звонок знакомства', 'Быстрый созвон', 'Быстрый созвон'],
+            array_column($data['bookings'], 'eventTypeName'),
+        );
+
+        foreach ($data['bookings'] as $booking) {
+            self::assertSame(
+                ['id', 'eventTypeId', 'eventTypeName', 'start', 'durationMinutes', 'name', 'email', 'note'],
+                array_keys($booking),
+            );
+            self::assertMatchesRegularExpression(self::UUID_PATTERN, $booking['id']);
+        }
+
+        $first = $data['bookings'][0];
+        self::assertSame(30, $first['durationMinutes']);
+        self::assertSame('Анна', $first['name']);
+        self::assertSame('anna@example.com', $first['email']);
+        self::assertSame('Обсудим запуск продукта', $first['note']);
+    }
+
+    public function testListBookingsExcludesPastBookingsAndKeepsCurrentMoment(): void
+    {
+        $this->createEventType('intro-call', 'Звонок знакомства', 30);
+        $this->book('intro-call', '2026-10-12T10:00:00+03:00');
+        $this->book('intro-call', '2026-10-12T13:00:00+03:00');
+
+        // «Сейчас» равно началу первой записи: начало не раньше текущего момента — предстоящая.
+        $this->advanceClockTo('2026-10-12 10:00:00');
+        $atStart = $this->decode($this->request('GET', '/api/bookings'));
+        self::assertSame(
+            ['2026-10-12T10:00:00+03:00', '2026-10-12T13:00:00+03:00'],
+            array_column($atStart['bookings'], 'start'),
+        );
+
+        // Начало прошло — запись исчезает из списка, вторая остаётся.
+        $this->advanceClockTo('2026-10-12 10:00:01');
+        $past = $this->decode($this->request('GET', '/api/bookings'));
+        self::assertSame(['2026-10-12T13:00:00+03:00'], array_column($past['bookings'], 'start'));
+
+        // Прошедшая запись отфильтрована, а не удалена.
+        self::assertSame(2, $this->scalar('SELECT COUNT(*) FROM bookings'));
+    }
+
+    public function testListBookingsReturnsEmptyListWhenNothingIsUpcoming(): void
+    {
+        $this->createEventType('intro-call', 'Звонок знакомства', 30);
+
+        $response = $this->request('GET', '/api/bookings');
+
+        self::assertSame(200, $response->getStatusCode());
+        $this->assertMatchesContract($response, 'get');
+
+        $data = $this->decode($response);
+        self::assertSame('Europe/Moscow', $data['timezone']);
+        self::assertSame([], $data['bookings']);
+    }
+
     private function createEventType(string $id, string $name, int $durationMinutes): void
     {
         $response = $this->request('POST', '/api/event-types', [
@@ -327,17 +413,28 @@ final class BookingsApiTest extends TestCase
         self::assertSame(201, $response->getStatusCode());
     }
 
-    /** Создаёт запись и проверяет, что слот действительно стал занятым. */
-    private function book(string $eventTypeId, string $start): void
+    /**
+     * Создаёт запись через API и проверяет, что слот действительно занялся.
+     *
+     * @param array<string, string> $overrides поля гостя, переопределяющие значения по умолчанию
+     */
+    private function book(string $eventTypeId, string $start, array $overrides = []): void
     {
-        $response = $this->request('POST', '/api/bookings', [
+        $response = $this->request('POST', '/api/bookings', array_merge([
             'eventTypeId' => $eventTypeId,
             'start' => $start,
             'name' => 'Анна',
             'email' => 'anna@example.com',
-        ]);
+        ], $overrides));
 
         self::assertSame(201, $response->getStatusCode(), 'Слот должен был записаться: ' . $start);
+    }
+
+    /** Пересобирает ядро с более поздним «сейчас»: прошедшие записи становятся неактуальными. */
+    private function advanceClockTo(string $now): void
+    {
+        unset($this->kernel);
+        $this->kernel = new Kernel(Config::fromEnv(), self::clockAt($now));
     }
 
     /** @return list<string> начала доступных слотов */
@@ -446,9 +543,9 @@ final class BookingsApiTest extends TestCase
     /**
      * Ответ обязан удовлетворять контракту из openapi.json (league/openapi-psr7-validator).
      */
-    private function assertMatchesContract(ResponseInterface $response): void
+    private function assertMatchesContract(ResponseInterface $response, string $method): void
     {
-        self::responseValidator()->validate(new OperationAddress('/bookings', 'post'), $response);
+        self::responseValidator()->validate(new OperationAddress('/bookings', $method), $response);
     }
 
     private static function responseValidator(): ResponseValidator

@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Админка — Calendar</title>
-  <meta name="description" content="Типы событий, на которые идёт запись: список и создание нового типа.">
+  <meta name="description" content="Типы событий, на которые идёт запись, и предстоящие записи Гостей: список и создание типа.">
   <link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
@@ -32,10 +32,13 @@
     <p class="lead">Типы событий, на которые идёт запись, и предстоящие записи.</p>
 
     <nav class="admin-tabs" aria-label="Разделы админки">
-      <span class="admin-tab active" aria-current="page">Типы событий</span>
+      <button class="admin-tab active" type="button" id="tab-event-types" role="tab"
+              aria-selected="true" aria-controls="panel-event-types">Типы событий</button>
+      <button class="admin-tab" type="button" id="tab-bookings" role="tab"
+              aria-selected="false" aria-controls="panel-bookings">Предстоящие записи</button>
     </nav>
 
-    <section class="card admin-panel" aria-labelledby="event-types-heading">
+    <section class="card admin-panel" id="panel-event-types" role="tabpanel" aria-labelledby="tab-event-types">
       <div class="admin-toolbar">
         <h2 id="event-types-heading">Типы событий</h2>
         <button class="btn btn-primary" type="button" id="open-create">Создать тип события</button>
@@ -58,6 +61,22 @@
           <tbody id="event-types-body"></tbody>
         </table>
       </div>
+    </section>
+
+    <section class="card admin-panel" id="panel-bookings" role="tabpanel" aria-labelledby="tab-bookings" hidden>
+      <div class="admin-toolbar">
+        <h2 id="bookings-heading">Предстоящие записи</h2>
+      </div>
+
+      <p class="admin-note">Авторизации в сервисе нет: email Гостей видит любой, у кого открыта админка.</p>
+
+      <p class="admin-status" id="bookings-loading">Загружаем записи…</p>
+
+      <p class="admin-error" id="bookings-error" role="alert" hidden></p>
+
+      <p class="empty-state" id="bookings-empty" hidden>Предстоящих записей нет</p>
+
+      <div class="booking-days" id="booking-days" hidden></div>
     </section>
   </main>
 

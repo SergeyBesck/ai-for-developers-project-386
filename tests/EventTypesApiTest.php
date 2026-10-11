@@ -204,14 +204,6 @@ final class EventTypesApiTest extends TestCase
         $this->assertProblem($response, 404);
     }
 
-    public function testNotImplementedContractOperationReturns501ProblemJson(): void
-    {
-        $response = $this->request('GET', '/api/bookings');
-
-        self::assertSame(501, $response->getStatusCode());
-        $this->assertProblem($response, 501);
-    }
-
     private function request(string $method, string $path, ?array $payload = null): ResponseInterface
     {
         $headers = $payload === null ? [] : ['Content-Type' => 'application/json'];

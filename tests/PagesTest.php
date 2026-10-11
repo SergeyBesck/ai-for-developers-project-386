@@ -132,6 +132,32 @@ final class PagesTest extends TestCase
         self::assertStringContainsString('DUPLICATE_MESSAGE', $js);
     }
 
+    public function testAdminPageHasBookingsTabWithStatesAndPrivacyNote(): void
+    {
+        $html = self::page('admin.html');
+
+        self::assertStringContainsString('id="tab-bookings"', $html);
+        self::assertStringContainsString('id="panel-bookings"', $html);
+        self::assertStringContainsString('Предстоящие записи', $html);
+        self::assertStringContainsString('Предстоящих записей нет', $html);
+        self::assertStringContainsString('id="bookings-loading"', $html);
+        self::assertStringContainsString('id="bookings-error"', $html);
+        // Видимость email Гостей в открытой админке сказано текстом, а не спрятано.
+        self::assertStringContainsString('email Гостей видит любой', $html);
+    }
+
+    public function testAdminScriptListsBookingsThroughGeneratedSdkWithoutManualFetch(): void
+    {
+        $js = self::page('assets/admin.js');
+
+        self::assertStringContainsString('listBookings', $js);
+        self::assertStringContainsString("from './sdk.gen.js'", $js);
+        self::assertStringContainsString('timeZone: timezone', $js);
+        self::assertStringContainsString('textContent', $js);
+        self::assertStringNotContainsString('fetch(', $js);
+        self::assertStringNotContainsString('innerHTML', $js);
+    }
+
     public function testBookingScriptUsesGeneratedSdkWithoutManualFetch(): void
     {
         $js = self::page('assets/booking.js');
