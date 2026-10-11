@@ -334,9 +334,11 @@ a {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-pill);
   background: var(--color-surface);
+  font-family: inherit;
   font-size: 0.92rem;
   font-weight: 600;
   color: var(--color-text-muted);
+  cursor: pointer;
 }
 
 .admin-tab.active {
@@ -423,6 +425,86 @@ a {
 
 .form-error {
   margin-bottom: 16px;
+}
+
+/* Вкладка «Предстоящие записи» */
+
+.admin-note {
+  margin: 0 0 16px;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.admin-status {
+  margin: 0;
+  padding: 36px 16px;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-card);
+  text-align: center;
+  color: var(--color-text-muted);
+}
+
+.booking-days {
+  display: grid;
+  gap: 22px;
+}
+
+.booking-day {
+  margin: 0 0 10px;
+  font-size: 1rem;
+}
+
+.booking-list {
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  list-style: none;
+  overflow: hidden;
+}
+
+.booking-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 0.95rem;
+}
+
+.booking-item:last-child {
+  border-bottom: 0;
+}
+
+.booking-time {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.booking-guest {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 10px;
+  min-width: 0;
+}
+
+.booking-name {
+  font-weight: 600;
+}
+
+.booking-email {
+  color: var(--color-text-muted);
+  overflow-wrap: anywhere;
+}
+
+.booking-note {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--color-text-muted);
 }
 
 /* Кнопка-действие */

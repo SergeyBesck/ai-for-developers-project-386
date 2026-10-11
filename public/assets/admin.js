@@ -1,9 +1,14 @@
-import { createEventType, listEventTypes } from './sdk.gen.js';
+import { createEventType, listBookings, listEventTypes } from './sdk.gen.js';
 
 const emptyState = document.getElementById('empty-state');
 const tableWrap = document.getElementById('table-wrap');
 const tableBody = document.getElementById('event-types-body');
 const listError = document.getElementById('list-error');
+const tabs = document.querySelectorAll('.admin-tab');
+const bookingsLoading = document.getElementById('bookings-loading');
+const bookingsError = document.getElementById('bookings-error');
+const bookingsEmpty = document.getElementById('bookings-empty');
+const bookingDays = document.getElementById('booking-days');
 const dialog = document.getElementById('create-dialog');
 const form = document.getElementById('create-form');
 const createError = document.getElementById('create-error');
@@ -18,6 +23,7 @@ const descriptionInput = document.getElementById('event-type-description');
 const DUPLICATE_MESSAGE = 'Тип события с таким ID уже существует';
 const LOAD_ERROR_MESSAGE = 'Не удалось загрузить типы событий';
 const CREATE_ERROR_MESSAGE = 'Не удалось создать тип события';
+const LOAD_BOOKINGS_ERROR = 'Не удалось загрузить записи';
 
 function showError(element, message) {
   element.textContent = message;
@@ -88,6 +94,144 @@ async function load() {
   render(Array.isArray(data) ? data : []);
 }
 
+/** Форматы дня и времени берут пояс из ответа сервера, а не из настроек браузера. */
+function bookingFormatters(timezone) {
+  return {
+    dayKey: new Intl.DateTimeFormat('en-CA', {
+      timeZone: timezone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }),
+    dayTitle: new Intl.DateTimeFormat('ru-RU', {
+      timeZone: timezone,
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+    }),
+    time: new Intl.DateTimeFormat('ru-RU', {
+      timeZone: timezone,
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    }),
+  };
+}
+
+/** Строка записи: диапазон времени, бейдж типа события, имя и email Гостя, заметка. */
+function renderBooking(booking, formatters) {
+  const item = document.createElement('li');
+  item.className = 'booking-item';
+
+  const start = new Date(booking.start);
+  const end = new Date(start.getTime() + booking.durationMinutes * 60000);
+
+  const time = document.createElement('time');
+  time.className = 'booking-time';
+  time.dateTime = booking.start;
+  time.textContent = `${formatters.time.format(start)}–${formatters.time.format(end)}`;
+
+  const badge = document.createElement('span');
+  badge.className = 'badge';
+  badge.textContent = booking.eventTypeName;
+
+  const guest = document.createElement('div');
+  guest.className = 'booking-guest';
+
+  const name = document.createElement('span');
+  name.className = 'booking-name';
+  name.textContent = booking.name;
+
+  const email = document.createElement('span');
+  email.className = 'booking-email';
+  email.textContent = booking.email;
+
+  guest.append(name, email);
+  item.append(time, badge, guest);
+
+  if (booking.note) {
+    const note = document.createElement('p');
+    note.className = 'booking-note';
+    note.textContent = booking.note;
+    item.append(note);
+  }
+
+  return item;
+}
+
+/** Список уже отсортирован по start — группы дней идут подряд, без повторов. */
+function renderBookings(bookings, timezone) {
+  bookingDays.replaceChildren();
+
+  const hasRows = bookings.length > 0;
+  bookingsEmpty.hidden = hasRows;
+  bookingDays.hidden = !hasRows;
+
+  if (!hasRows) {
+    return;
+  }
+
+  const formatters = bookingFormatters(timezone);
+  let currentDay = null;
+  let list = null;
+
+  for (const booking of bookings) {
+    const start = new Date(booking.start);
+    const day = formatters.dayKey.format(start);
+
+    if (day !== currentDay) {
+      currentDay = day;
+
+      const heading = document.createElement('h3');
+      heading.className = 'booking-day';
+      heading.textContent = formatters.dayTitle.format(start);
+
+      list = document.createElement('ul');
+      list.className = 'booking-list';
+
+      bookingDays.append(heading, list);
+    }
+
+    list.append(renderBooking(booking, formatters));
+  }
+}
+
+async function loadBookings() {
+  hideError(bookingsError);
+  bookingsEmpty.hidden = true;
+  bookingDays.hidden = true;
+  bookingsLoading.hidden = false;
+
+  const { data, error } = await listBookings();
+
+  bookingsLoading.hidden = true;
+
+  if (error) {
+    showError(bookingsError, problemDetail(error) || LOAD_BOOKINGS_ERROR);
+    return;
+  }
+
+  if (typeof data?.timezone !== 'string') {
+    showError(bookingsError, LOAD_BOOKINGS_ERROR);
+    return;
+  }
+
+  renderBookings(Array.isArray(data?.bookings) ? data.bookings : [], data.timezone);
+}
+
+function selectTab(tab) {
+  for (const other of tabs) {
+    const active = other === tab;
+    other.classList.toggle('active', active);
+    other.setAttribute('aria-selected', String(active));
+    document.getElementById(other.getAttribute('aria-controls')).hidden = !active;
+  }
+}
+
+for (const tab of tabs) {
+  tab.addEventListener('click', () => selectTab(tab));
+}
+
 openButton.addEventListener('click', () => {
   hideError(createError);
   dialog.showModal();
@@ -126,4 +270,4 @@ form.addEventListener('submit', async (event) => {
   }
 });
 
-await load();
+await Promise.all([load(), loadBookings()]);

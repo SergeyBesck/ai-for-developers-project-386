@@ -6,6 +6,7 @@ namespace App;
 
 use App\Handler\CreateBookingHandler;
 use App\Handler\HandlerInterface;
+use App\Handler\ListBookingsHandler;
 use App\Handler\ListSlotsHandler;
 use App\Http\Json;
 use League\OpenAPIValidation\PSR7\Exception\NoOperation;
@@ -154,6 +155,11 @@ final class Kernel
             ),
             CreateBookingHandler::class => new CreateBookingHandler(
                 $this->eventTypes,
+                $this->bookings,
+                $this->clock,
+                $this->timezone,
+            ),
+            ListBookingsHandler::class => new ListBookingsHandler(
                 $this->bookings,
                 $this->clock,
                 $this->timezone,

@@ -97,6 +97,67 @@ final class BookingRepository
     }
 
     /**
+     * Предстоящие записи всех типов событий: начало не раньше «сейчас», порядок — по start.
+     *
+     * Сравнение и сортировка идут по моменту времени, а не по строке: ISO 8601 с разными
+     * смещениями пояса не упорядочиваются лексикографически.
+     *
+     * @return list<array{
+     *     id: string,
+     *     eventTypeId: string,
+     *     eventTypeName: string,
+     *     start: DateTimeImmutable,
+     *     durationMinutes: int,
+     *     name: string,
+     *     email: string,
+     *     note: string|null
+     * }>
+     */
+    public function upcoming(DateTimeImmutable $now): array
+    {
+        $statement = $this->database->pdo()->prepare(
+            'SELECT bookings.id AS id,
+                    bookings.event_type_id AS event_type_id,
+                    bookings.start AS start,
+                    bookings.name AS name,
+                    bookings.email AS email,
+                    bookings.note AS note,
+                    event_types.name AS event_type_name,
+                    event_types.duration_minutes AS duration_minutes
+             FROM bookings
+             JOIN event_types ON event_types.id = bookings.event_type_id',
+        );
+        $statement->execute();
+
+        $upcoming = [];
+        foreach ($statement->fetchAll() as $row) {
+            $start = new DateTimeImmutable((string) $row['start']);
+
+            if ($start < $now) {
+                continue;
+            }
+
+            $upcoming[] = [
+                'id' => (string) $row['id'],
+                'eventTypeId' => (string) $row['event_type_id'],
+                'eventTypeName' => (string) $row['event_type_name'],
+                'start' => $start,
+                'durationMinutes' => (int) $row['duration_minutes'],
+                'name' => (string) $row['name'],
+                'email' => (string) $row['email'],
+                'note' => $row['note'] === null ? null : (string) $row['note'],
+            ];
+        }
+
+        usort(
+            $upcoming,
+            static fn (array $a, array $b): int => $a['start']->getTimestamp() <=> $b['start']->getTimestamp(),
+        );
+
+        return $upcoming;
+    }
+
+    /**
      * Занятые ячейки из переданного набора (Unix-секунды начала ячеек).
      *
      * @param list<int> $cells
