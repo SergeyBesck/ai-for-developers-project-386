@@ -8,4 +8,8 @@ export default [
     files: ['public/assets/**/*.js'],
     languageOptions: { globals: globals.browser, sourceType: 'module' },
   },
+  {
+    files: ['tests/js/**/*.mjs'],
+    languageOptions: { globals: globals.node, sourceType: 'module' },
+  },
 ];
